@@ -14,13 +14,53 @@
 <div><label>NET P&amp;L ($)</label><input id="pnl" type="number" step=".01" placeholder="例如 125 或 -60"></div><div><label>ORDER FLOW SETUP</label><select id="setup"><option>Absorption</option><option>Delta Divergence</option><option>Imbalance</option><option>Liquidity Sweep</option><option>DOM Pull / Stack</option><option>Other</option></select></div></div>
 <button id="add">+ ADD TRADE</button><div style="overflow:auto"><table><thead><tr><th>TIME</th><th>CONTRACT</th><th>SESSION</th><th>SETUP</th><th>P&amp;L</th><th></th></tr></thead><tbody id="rows"></tbody></table></div><div class="actions"><button class="secondary" id="csv">EXPORT CSV</button><button class="danger" id="clear">CLEAR JOURNAL</button></div></section>
 <aside><section class="panel"><h2>Risk Guardrails</h2><div class="formgrid"><div><label>PROFIT TARGET ($)</label><input id="target" type="number" value="300"></div><div><label>MAX DAILY LOSS ($)</label><input id="maxloss" type="number" value="200"></div><div><label>GIVEBACK LIMIT ($)</label><input id="giveback" type="number" value="100"></div><div><label>MAX LOSS STREAK</label><input id="streak" type="number" value="3"></div></div><button class="secondary" id="saveRules">SAVE RULES</button><div class="notice"><div class="muted">SESSION STATUS</div><div id="status" class="status" style="font-size:20px;margin-top:7px">READY</div><div id="reason" class="muted" style="margin-top:5px">Waiting for trade data.</div></div><div class="muted">TARGET PROGRESS</div><div class="bar" style="margin-top:9px"><span id="progress"></span></div></section>
-<section class="panel" style="margin-top:14px"><h2>Execution Discipline</h2><ul class="muted" style="padding-left:18px;line-height:1.9"><li>开盘前 15 分钟：只做预设 A 级订单流机会。</li><li>达到目标后停止主动开仓，不因行情继续波动追单。</li><li>盈利回吐触及上限：结束当日交易。</li><li>每笔交易必须记录 DOM / Delta / Footprint 依据。</li><li>连续亏损达到上限：强制离场复盘。</li></ul></section></aside></div></main>
+<section class="panel" style="margin-top:14px"><h2>Execution Discipline</h2><ul class="muted" style="padding-left:18px;line-height:1.9"><li>开盘前 15 分钟：只做预设 A 级订单流机会。</li><li>达到目标后停止主动开仓，不因行情继续波动追单。</li><li>盈利回吐触及上限：结束当日交易。</li><li>每笔交易必须记录 DOM / Delta / Footprint 依据。</li><li>连续亏损达到上限：强制离场复盘。</li></ul></section></aside></div>
+<section class="panel" style="margin-top:14px"><h2 id="fillsTitle">Execution Blotter · 成交明细</h2>
+<div class="formgrid">
+<div><label>成交时间 / TIME</label><input id="fillTime" type="datetime-local"></div>
+<div><label>关联交易 ID / TRADE ID</label><input id="fillTrade" placeholder="例如 T-001"></div>
+<div><label>合约 / CONTRACT</label><select id="fillSymbol"><option>NQ</option><option>MNQ</option></select></div>
+<div><label>动作 / ACTION</label><select id="fillAction"><option>ENTRY</option><option>ADD</option><option>REDUCE</option><option>EXIT</option></select></div>
+<div><label>方向 / SIDE</label><select id="fillSide"><option>BUY</option><option>SELL</option></select></div>
+<div><label>成交价格 / PRICE</label><input id="fillPrice" type="number" step=".25"></div>
+<div><label>数量 / QTY</label><input id="fillQty" type="number" step="1" min="1"></div>
+<div><label>手续费 / FEES ($)</label><input id="fillFees" type="number" step=".01" value="0"></div>
+</div><button id="addFill">+ 添加成交</button>
+<div style="overflow:auto"><table><thead><tr><th>TIME</th><th>TRADE ID</th><th>CONTRACT</th><th>ACTION</th><th>SIDE</th><th>PRICE</th><th>QTY</th><th>FEES</th><th></th></tr></thead><tbody id="fillRows"></tbody></table></div>
+<button class="secondary" id="fillCsv">导出成交 CSV</button></section>
+<section class="panel" style="margin-top:14px"><h2 id="tapeTitle">Market Tape · DOM / Time & Sales</h2>
+<div class="notice muted">说明：当前网页没有连接 Rithmic 实时行情。这里用于手动记录或导入 Marsoon / Rithmic 导出的逐笔成交 CSV，不会伪装成实时行情。</div>
+<div class="formgrid">
+<div><label>时间戳 / TIMESTAMP</label><input id="tapeTime" type="datetime-local"></div>
+<div><label>合约 / SYMBOL</label><select id="tapeSymbol"><option>NQ</option><option>MNQ</option></select></div>
+<div><label>成交价 / PRICE</label><input id="tapePrice" type="number" step=".25"></div>
+<div><label>成交量 / SIZE</label><input id="tapeSize" type="number" step="1" min="1"></div>
+<div><label>主动方向 / AGGRESSOR</label><select id="tapeSide"><option>BUY</option><option>SELL</option><option>UNKNOWN</option></select></div>
+<div><label>关联交易 ID / TRADE ID</label><input id="tapeTrade" placeholder="可留空"></div>
+</div><button id="addTape">+ 添加逐笔</button>
+<label style="margin-top:12px">导入逐笔 CSV（列名建议：timestamp,symbol,price,size,aggressor,tradeId）</label><input id="tapeFile" type="file" accept=".csv,text/csv">
+<div style="overflow:auto"><table><thead><tr><th>TIME</th><th>SYMBOL</th><th>PRICE</th><th>SIZE</th><th>AGGRESSOR</th><th>TRADE ID</th><th></th></tr></thead><tbody id="tapeRows"></tbody></table></div>
+<div class="actions"><button class="secondary" id="tapeCsv">导出逐笔 CSV</button><button class="danger" id="clearTape">清空逐笔</button></div></section>
+<section class="panel" style="margin-top:14px"><h2 id="reviewTitle">Trade Review · 交易复盘</h2>
+<div class="formgrid">
+<div><label>复盘日期 / DATE</label><input id="reviewDate" type="date"></div>
+<div><label>关联交易 ID / TRADE ID</label><input id="reviewTrade" placeholder="例如 T-001"></div>
+<div><label>执行评分 / EXECUTION SCORE (1–10)</label><input id="reviewScore" type="number" min="1" max="10"></div>
+<div><label>是否遵守计划 / PLAN FOLLOWED</label><select id="reviewPlan"><option value="yes">是 / YES</option><option value="no">否 / NO</option><option value="partial">部分 / PARTIAL</option></select></div>
+<div style="grid-column:1/-1"><label>进场逻辑与订单流证据 / ENTRY THESIS & ORDER FLOW EVIDENCE</label><textarea id="reviewThesis" rows="3" style="width:100%;background:#0b1118;color:#eef3f8;border:1px solid var(--line);border-radius:9px;padding:11px"></textarea></div>
+<div style="grid-column:1/-1"><label>执行问题 / EXECUTION MISTAKES</label><textarea id="reviewMistakes" rows="2" style="width:100%;background:#0b1118;color:#eef3f8;border:1px solid var(--line);border-radius:9px;padding:11px"></textarea></div>
+<div style="grid-column:1/-1"><label>改进方案 / LESSON & NEXT ACTION</label><textarea id="reviewLesson" rows="2" style="width:100%;background:#0b1118;color:#eef3f8;border:1px solid var(--line);border-radius:9px;padding:11px"></textarea></div>
+<div style="grid-column:1/-1"><label>截图链接 / CHART OR SCREENSHOT URL</label><input id="reviewImage" placeholder="可填截图链接"></div>
+</div><button id="saveReview">保存复盘</button>
+<div style="overflow:auto"><table><thead><tr><th>DATE</th><th>TRADE ID</th><th>SCORE</th><th>PLAN</th><th>LESSON</th><th></th></tr></thead><tbody id="reviewRows"></tbody></table></div>
+<button class="secondary" id="reviewCsv">导出复盘 CSV</button></section>
+</main>
 <script>
 
 let language=localStorage.getItem('msg_language')||'en';
 const translations={
 zh:{brandNote:'本地交易日志 · 手动录入',title:'交易时段指挥中心',subtitle:'追踪开盘时段优势，保护已实现利润，按计划停止交易。',
-metrics:['净盈亏','胜率','盈利因子','峰值回吐'],sections:['交易日志','风险护栏','执行纪律'],
+metrics:['净盈亏','胜率','盈利因子','峰值回吐'],sections:['交易日志','风险护栏','执行纪律','成交明细 · Execution Blotter','市场逐笔 · DOM / Time & Sales','交易复盘 · Trade Review'],
 labels:['时间','交易品种','交易时段','方向','净盈亏 ($)','订单流形态','盈利目标 ($)','每日最大亏损 ($)','回吐上限 ($)','最大连续亏损次数'],
 sessions:['开盘 0–15 分钟','开盘 15–45 分钟','45 分钟以上'],directions:['做多','做空'],
 add:'+ 添加交易',csv:'导出 CSV',clear:'清空日志',save:'保存规则',
@@ -29,7 +69,7 @@ discipline:['开盘前 15 分钟：只做预设 A 级订单流机会。','达到
 ready:'执行计划中。只交易符合条件的订单流形态。',maxloss:'已触及每日最大亏损。',giveback:'已触及利润回吐上限，保护当日成果。',streak:'连续亏损达到上限。',target:'已达到盈利目标。停止主动开仓。',
 invalid:'请输入有效的净盈亏',confirm:'确定清空全部交易记录？',remove:'删除交易',lang:'EN'},
 en:{brandNote:'LOCAL JOURNAL · MANUAL INPUT',title:'Session Command Center',subtitle:'Track the open-session edge. Protect realized profits. Stop when the plan says stop.',
-metrics:['NET P&L','WIN RATE','PROFIT FACTOR','PEAK GIVEBACK'],sections:['Trade Journal','Risk Guardrails','Execution Discipline'],
+metrics:['NET P&L','WIN RATE','PROFIT FACTOR','PEAK GIVEBACK'],sections:['Trade Journal','Risk Guardrails','Execution Discipline','Execution Blotter','Market Tape · DOM / Time & Sales','Trade Review'],
 labels:['TIME','INSTRUMENT','SESSION','DIRECTION','NET P&L ($)','ORDER FLOW SETUP','PROFIT TARGET ($)','MAX DAILY LOSS ($)','GIVEBACK LIMIT ($)','MAX LOSS STREAK'],
 sessions:['OPEN 0–15M','OPEN 15–45M','45M+'],directions:['LONG','SHORT'],
 add:'+ ADD TRADE',csv:'EXPORT CSV',clear:'CLEAR JOURNAL',save:'SAVE RULES',
@@ -43,8 +83,8 @@ function setLanguage(lang){
  $('localNote').textContent=t.brandNote;$('langToggle').textContent=t.lang;
  document.querySelector('h1').textContent=t.title;document.querySelector('h1').nextElementSibling.textContent=t.subtitle;
  document.querySelectorAll('.grid .card .muted').forEach((e,i)=>e.textContent=t.metrics[i]);
- document.querySelectorAll('.panel h2').forEach((e,i)=>e.textContent=t.sections[i]);
- document.querySelectorAll('label').forEach((e,i)=>e.textContent=t.labels[i]);
+ document.querySelectorAll('.panel h2').forEach((e,i)=>{if(t.sections[i])e.textContent=t.sections[i]});
+ document.querySelectorAll('label').forEach((e,i)=>{if(t.labels[i])e.textContent=t.labels[i]});
  [...$('session').options].forEach((e,i)=>e.textContent=t.sessions[i]);[...$('side').options].forEach((e,i)=>e.textContent=t.directions[i]);
  $('add').textContent=t.add;$('csv').textContent=t.csv;$('clear').textContent=t.clear;$('saveRules').textContent=t.save;
  document.querySelectorAll('thead th').forEach((e,i)=>e.textContent=t.headers[i]);
@@ -64,5 +104,26 @@ $('status').textContent=status;$('status').style.color=status==='READY'?'#35d49a
 function removeTrade(i){trades.splice(i,1);persist()}$('add').onclick=()=>{let p=Number($('pnl').value);if(!$('pnl').value||!Number.isFinite(p))return alert(translations[language].invalid);trades.push({time:$('time').value||new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}),symbol:$('symbol').value,session:$('session').value,side:$('side').value,pnl:p,setup:$('setup').value});$('pnl').value='';persist()};
 $('saveRules').onclick=()=>{rules={target:+$('target').value,maxloss:+$('maxloss').value,giveback:+$('giveback').value,streak:+$('streak').value};localStorage.setItem('msg_rules',JSON.stringify(rules));render()};
 $('clear').onclick=()=>{if(confirm(translations[language].confirm)){trades=[];persist()}};$('csv').onclick=()=>{let csv='time,symbol,session,side,setup,pnl\n'+trades.map(t=>[t.time,t.symbol,t.session,t.side,t.setup,t.pnl].join(',')).join('\n');let a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download='marsoon-session-journal.csv';a.click();URL.revokeObjectURL(a.href)};
-if(localStorage.getItem('msg_rules'))Object.entries(rules).forEach(([k,v])=>$(k).value=v);setLanguage(language);
+if(localStorage.getItem('msg_rules'))Object.entries(rules).forEach(([k,v])=>$(k).value=v);
+let fills=JSON.parse(localStorage.getItem('msg_fills')||'[]');
+let tape=JSON.parse(localStorage.getItem('msg_tape')||'[]');
+let reviews=JSON.parse(localStorage.getItem('msg_reviews')||'[]');
+const safe=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function saveExtra(){localStorage.setItem('msg_fills',JSON.stringify(fills));localStorage.setItem('msg_tape',JSON.stringify(tape));localStorage.setItem('msg_reviews',JSON.stringify(reviews));renderExtra()}
+function renderExtra(){
+ $('fillRows').innerHTML=fills.map((x,i)=>'<tr><td>'+safe(x.time)+'</td><td>'+safe(x.trade)+'</td><td>'+safe(x.symbol)+'</td><td>'+safe(x.action)+'</td><td>'+safe(x.side)+'</td><td>'+x.price+'</td><td>'+x.qty+'</td><td>'+money(x.fees)+'</td><td><button class="danger" style="margin:0" onclick="delFill('+i+')">×</button></td></tr>').join('');
+ $('tapeRows').innerHTML=tape.slice(-500).reverse().map((x,j)=>{let i=tape.length-1-j;return '<tr><td>'+safe(x.time)+'</td><td>'+safe(x.symbol)+'</td><td>'+x.price+'</td><td>'+x.size+'</td><td class="'+(x.aggressor==='BUY'?'green':x.aggressor==='SELL'?'red':'')+'">'+safe(x.aggressor)+'</td><td>'+safe(x.tradeId)+'</td><td><button class="danger" style="margin:0" onclick="delTape('+i+')">×</button></td></tr>'}).join('');
+ $('reviewRows').innerHTML=reviews.map((x,i)=>'<tr><td>'+safe(x.date)+'</td><td>'+safe(x.trade)+'</td><td>'+safe(x.score)+'/10</td><td>'+safe(x.plan)+'</td><td>'+safe(x.lesson).slice(0,90)+'</td><td><button class="danger" style="margin:0" onclick="delReview('+i+')">×</button></td></tr>').join('');
+}
+function delFill(i){fills.splice(i,1);saveExtra()}function delTape(i){tape.splice(i,1);saveExtra()}function delReview(i){reviews.splice(i,1);saveExtra()}
+$('addFill').onclick=()=>{let price=+$('fillPrice').value,qty=+$('fillQty').value;if(!(price>0&&qty>0))return alert(language==='zh'?'请输入有效成交价和数量':'Enter a valid price and quantity');fills.push({time:$('fillTime').value||new Date().toISOString(),trade:$('fillTrade').value,symbol:$('fillSymbol').value,action:$('fillAction').value,side:$('fillSide').value,price,qty,fees:+$('fillFees').value||0});saveExtra()};
+$('addTape').onclick=()=>{let price=+$('tapePrice').value,size=+$('tapeSize').value;if(!(price>0&&size>0))return alert(language==='zh'?'请输入有效价格和成交量':'Enter a valid price and size');tape.push({time:$('tapeTime').value||new Date().toISOString(),symbol:$('tapeSymbol').value,price,size,aggressor:$('tapeSide').value,tradeId:$('tapeTrade').value});saveExtra()};
+$('saveReview').onclick=()=>{if(!$('reviewDate').value)return alert(language==='zh'?'请填写复盘日期':'Enter review date');reviews.push({date:$('reviewDate').value,trade:$('reviewTrade').value,score:$('reviewScore').value,plan:$('reviewPlan').value,thesis:$('reviewThesis').value,mistakes:$('reviewMistakes').value,lesson:$('reviewLesson').value,image:$('reviewImage').value});saveExtra()};
+function downloadCsv(name,rows){if(!rows.length)return alert(language==='zh'?'暂无记录可导出':'No records to export');let keys=Object.keys(rows[0]),esc=v=>'"'+String(v??'').replace(/"/g,'""')+'"',csv='\ufeff'+keys.join(',')+'\n'+rows.map(r=>keys.map(k=>esc(r[k])).join(',')).join('\n');let a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));a.download=name;a.click();URL.revokeObjectURL(a.href)}
+$('fillCsv').onclick=()=>downloadCsv('marsoon-fills.csv',fills);$('tapeCsv').onclick=()=>downloadCsv('marsoon-market-tape.csv',tape);$('reviewCsv').onclick=()=>downloadCsv('marsoon-trade-reviews.csv',reviews);
+$('clearTape').onclick=()=>{if(confirm(language==='zh'?'确定清空逐笔数据？':'Clear all tape records?')){tape=[];saveExtra()}};
+$('tapeFile').onchange=async e=>{let file=e.target.files[0];if(!file)return;let lines=(await file.text()).split(/\r?\n/).filter(Boolean),head=lines.shift().split(',').map(x=>x.trim().toLowerCase());let col=(...names)=>head.findIndex(h=>names.includes(h));let idx={time:col('timestamp','time','datetime'),symbol:col('symbol','contract'),price:col('price'),size:col('size','qty','quantity','volume'),aggressor:col('aggressor','side'),tradeId:col('tradeid','trade_id','id')};let parsed=0;for(let line of lines){let cells=line.match(/("([^"]|"")*"|[^,]*)(,|$)/g)?.filter(Boolean).map(x=>x.replace(/,$/,'').replace(/^"|"$/g,'').replace(/""/g,'"'))||line.split(',');let price=+cells[idx.price],size=+cells[idx.size];if(!(price>0&&size>0))continue;tape.push({time:cells[idx.time]||'',symbol:cells[idx.symbol]||'NQ',price,size,aggressor:(cells[idx.aggressor]||'UNKNOWN').toUpperCase(),tradeId:idx.tradeId>=0?cells[idx.tradeId]:''});parsed++}saveExtra();alert((language==='zh'?'成功导入 ':'Imported ')+parsed+(language==='zh'?' 条逐笔':' tape rows'));e.target.value=''};
+renderExtra();
+
+setLanguage(language);
 </script></body></html>
