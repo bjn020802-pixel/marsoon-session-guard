@@ -93,8 +93,8 @@ function setLanguage(lang){
  document.querySelectorAll('.panel ul li').forEach((e,i)=>e.textContent=t.discipline[i]);
  render();
 }
-$('langToggle').onclick=()=>setLanguage(language==='en'?'zh':'en');
-const $=id=>document.getElementById(id);let trades=JSON.parse(localStorage.getItem('msg_trades')||'[]');let rules=JSON.parse(localStorage.getItem('msg_rules')||'{"target":300,"maxloss":200,"giveback":100,"streak":3}');
+const $=id=>document.getElementById(id);
+$('langToggle').onclick=()=>setLanguage(language==='en'?'zh':'en');let trades=JSON.parse(localStorage.getItem('msg_trades')||'[]');let rules=JSON.parse(localStorage.getItem('msg_rules')||'{"target":300,"maxloss":200,"giveback":100,"streak":3}');
 function persist(){localStorage.setItem('msg_trades',JSON.stringify(trades));render()}function money(n){return(n<0?'−':'')+'$'+Math.abs(n).toFixed(2)}
 function render(){let net=trades.reduce((a,t)=>a+t.pnl,0),wins=trades.filter(t=>t.pnl>0),loss=trades.filter(t=>t.pnl<0),gw=wins.reduce((a,t)=>a+t.pnl,0),gl=-loss.reduce((a,t)=>a+t.pnl,0),peak=0,equity=0,maxGive=0;trades.forEach(t=>{equity+=t.pnl;peak=Math.max(peak,equity);maxGive=Math.max(maxGive,peak-equity)});
 $('net').textContent=money(net);$('net').className='metric '+(net>=0?'green':'red');$('win').textContent=trades.length?(wins.length/trades.length*100).toFixed(1)+'%':'—';$('pf').textContent=gl?(gw/gl).toFixed(2):gw?'∞':'—';$('give').textContent=money(maxGive);
