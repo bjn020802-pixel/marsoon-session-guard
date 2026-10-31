@@ -5,7 +5,7 @@
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:#eef3f8;font:14px Inter,system-ui,-apple-system,sans-serif}main{max-width:1180px;margin:auto;padding:26px}.top{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:24px}.brand{font-size:20px;font-weight:800;letter-spacing:.08em}.sub,.muted{color:var(--muted)}h1{font-size:28px;margin:8px 0}.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:20px 0}.card,.panel{background:var(--panel);border:1px solid var(--line);border-radius:15px;padding:17px}.metric{font-size:27px;font-weight:750;margin-top:10px}.green{color:var(--green)}.red{color:var(--red)}.layout{display:grid;grid-template-columns:1.2fr .8fr;gap:14px}.panel h2{font-size:15px;margin:0 0 16px}.formgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}label{display:block;color:var(--muted);font-size:12px;margin-bottom:6px}input,select{width:100%;background:#0b1118;border:1px solid var(--line);border-radius:9px;padding:11px;color:#eef3f8}button{background:var(--green);color:#06130e;border:0;border-radius:9px;padding:11px 16px;font-weight:750;cursor:pointer;margin-top:12px}.secondary{background:#202b38;color:#eaf1f8}.danger{background:#351c24;color:#ff9aa5}table{width:100%;border-collapse:collapse;margin-top:12px}th,td{text-align:left;padding:11px 8px;border-bottom:1px solid var(--line);font-size:12px}th{color:var(--muted)}.notice{padding:14px;border:1px solid var(--line);border-radius:12px;margin:12px 0}.status{font-weight:800}.bar{height:9px;background:#25303c;border-radius:10px;overflow:hidden}.bar span{display:block;height:100%;background:var(--green);width:0}.actions{display:flex;gap:8px;flex-wrap:wrap}
 @media(max-width:760px){main{padding:16px}.grid{grid-template-columns:repeat(2,1fr)}.layout{grid-template-columns:1fr}.metric{font-size:23px}.top{align-items:flex-start;flex-direction:column}}
 </style></head><body><main>
-<header class="top"><div><div class="brand">MARSOON <span class="green">/ SESSION GUARD</span></div><div class="sub">ORDER FLOW TRADING · DAILY RISK CONTROL</div></div><div class="muted">LOCAL JOURNAL · MANUAL INPUT</div></header>
+<header class="top"><div><div class="brand">MARSOON <span class="green">/ SESSION GUARD</span></div><div class="sub">ORDER FLOW TRADING · DAILY RISK CONTROL</div></div><div class="actions"><div class="muted" id="localNote">LOCAL JOURNAL · MANUAL INPUT</div><button class="secondary" id="langToggle" style="margin:0">中文</button></div></header>
 <h1>Session Command Center</h1><div class="sub">Track the open-session edge. Protect realized profits. Stop when the plan says stop.</div>
 <section class="grid"><div class="card"><div class="muted">NET P&amp;L</div><div id="net" class="metric">$0.00</div></div><div class="card"><div class="muted">WIN RATE</div><div id="win" class="metric">—</div></div><div class="card"><div class="muted">PROFIT FACTOR</div><div id="pf" class="metric">—</div></div><div class="card"><div class="muted">PEAK GIVEBACK</div><div id="give" class="metric">$0.00</div></div></section>
 <div class="layout"><section class="panel"><h2>Trade Journal</h2><div class="formgrid">
@@ -16,15 +16,53 @@
 <aside><section class="panel"><h2>Risk Guardrails</h2><div class="formgrid"><div><label>PROFIT TARGET ($)</label><input id="target" type="number" value="300"></div><div><label>MAX DAILY LOSS ($)</label><input id="maxloss" type="number" value="200"></div><div><label>GIVEBACK LIMIT ($)</label><input id="giveback" type="number" value="100"></div><div><label>MAX LOSS STREAK</label><input id="streak" type="number" value="3"></div></div><button class="secondary" id="saveRules">SAVE RULES</button><div class="notice"><div class="muted">SESSION STATUS</div><div id="status" class="status" style="font-size:20px;margin-top:7px">READY</div><div id="reason" class="muted" style="margin-top:5px">Waiting for trade data.</div></div><div class="muted">TARGET PROGRESS</div><div class="bar" style="margin-top:9px"><span id="progress"></span></div></section>
 <section class="panel" style="margin-top:14px"><h2>Execution Discipline</h2><ul class="muted" style="padding-left:18px;line-height:1.9"><li>开盘前 15 分钟：只做预设 A 级订单流机会。</li><li>达到目标后停止主动开仓，不因行情继续波动追单。</li><li>盈利回吐触及上限：结束当日交易。</li><li>每笔交易必须记录 DOM / Delta / Footprint 依据。</li><li>连续亏损达到上限：强制离场复盘。</li></ul></section></aside></div></main>
 <script>
+
+let language=localStorage.getItem('msg_language')||'en';
+const translations={
+zh:{brandNote:'本地交易日志 · 手动录入',title:'交易时段指挥中心',subtitle:'追踪开盘时段优势，保护已实现利润，按计划停止交易。',
+metrics:['净盈亏','胜率','盈利因子','峰值回吐'],sections:['交易日志','风险护栏','执行纪律'],
+labels:['时间','交易品种','交易时段','方向','净盈亏 ($)','订单流形态','盈利目标 ($)','每日最大亏损 ($)','回吐上限 ($)','最大连续亏损次数'],
+sessions:['开盘 0–15 分钟','开盘 15–45 分钟','45 分钟以上'],directions:['做多','做空'],
+add:'+ 添加交易',csv:'导出 CSV',clear:'清空日志',save:'保存规则',
+headers:['时间','合约','时段','形态','盈亏','操作'],statusLabel:'时段状态',progress:'目标进度',
+discipline:['开盘前 15 分钟：只做预设 A 级订单流机会。','达到目标后停止主动开仓，不因行情继续波动追单。','盈利回吐触及上限：结束当日交易。','每笔交易必须记录 DOM / Delta / Footprint 依据。','连续亏损达到上限：强制离场复盘。'],
+ready:'执行计划中。只交易符合条件的订单流形态。',maxloss:'已触及每日最大亏损。',giveback:'已触及利润回吐上限，保护当日成果。',streak:'连续亏损达到上限。',target:'已达到盈利目标。停止主动开仓。',
+invalid:'请输入有效的净盈亏',confirm:'确定清空全部交易记录？',remove:'删除交易',lang:'EN'},
+en:{brandNote:'LOCAL JOURNAL · MANUAL INPUT',title:'Session Command Center',subtitle:'Track the open-session edge. Protect realized profits. Stop when the plan says stop.',
+metrics:['NET P&L','WIN RATE','PROFIT FACTOR','PEAK GIVEBACK'],sections:['Trade Journal','Risk Guardrails','Execution Discipline'],
+labels:['TIME','INSTRUMENT','SESSION','DIRECTION','NET P&L ($)','ORDER FLOW SETUP','PROFIT TARGET ($)','MAX DAILY LOSS ($)','GIVEBACK LIMIT ($)','MAX LOSS STREAK'],
+sessions:['OPEN 0–15M','OPEN 15–45M','45M+'],directions:['LONG','SHORT'],
+add:'+ ADD TRADE',csv:'EXPORT CSV',clear:'CLEAR JOURNAL',save:'SAVE RULES',
+headers:['TIME','CONTRACT','SESSION','SETUP','P&L',''],statusLabel:'SESSION STATUS',progress:'TARGET PROGRESS',
+discipline:['First 15 minutes: trade only pre-planned A-grade order-flow opportunities.','After reaching target, stop opening new positions. Do not chase continued movement.','If giveback reaches the limit, end the trading day.','Record DOM / Delta / Footprint evidence for every trade.','At the loss-streak limit, step away and review.'],
+ready:'Plan active. Trade only valid order-flow setups.',maxloss:'Daily max loss reached.',giveback:'Giveback limit reached. Protect the session.',streak:'Maximum consecutive losses reached.',target:'Profit target reached. Stop opening new positions.',
+invalid:'Enter a valid net P&L.',confirm:'Clear all trade records?',remove:'Remove trade',lang:'中文'}
+};
+function setLanguage(lang){
+ language=lang;localStorage.setItem('msg_language',lang);const t=translations[lang];document.documentElement.lang=lang==='zh'?'zh-CN':'en';
+ $('localNote').textContent=t.brandNote;$('langToggle').textContent=t.lang;
+ document.querySelector('h1').textContent=t.title;document.querySelector('h1').nextElementSibling.textContent=t.subtitle;
+ document.querySelectorAll('.grid .card .muted').forEach((e,i)=>e.textContent=t.metrics[i]);
+ document.querySelectorAll('.panel h2').forEach((e,i)=>e.textContent=t.sections[i]);
+ document.querySelectorAll('label').forEach((e,i)=>e.textContent=t.labels[i]);
+ [...$('session').options].forEach((e,i)=>e.textContent=t.sessions[i]);[...$('side').options].forEach((e,i)=>e.textContent=t.directions[i]);
+ $('add').textContent=t.add;$('csv').textContent=t.csv;$('clear').textContent=t.clear;$('saveRules').textContent=t.save;
+ document.querySelectorAll('thead th').forEach((e,i)=>e.textContent=t.headers[i]);
+ $('status').previousElementSibling.textContent=t.statusLabel;
+ $('progress').parentElement.previousElementSibling.textContent=t.progress;
+ document.querySelectorAll('.panel ul li').forEach((e,i)=>e.textContent=t.discipline[i]);
+ render();
+}
+$('langToggle').onclick=()=>setLanguage(language==='en'?'zh':'en');
 const $=id=>document.getElementById(id);let trades=JSON.parse(localStorage.getItem('msg_trades')||'[]');let rules=JSON.parse(localStorage.getItem('msg_rules')||'{"target":300,"maxloss":200,"giveback":100,"streak":3}');
 function persist(){localStorage.setItem('msg_trades',JSON.stringify(trades));render()}function money(n){return(n<0?'−':'')+'$'+Math.abs(n).toFixed(2)}
 function render(){let net=trades.reduce((a,t)=>a+t.pnl,0),wins=trades.filter(t=>t.pnl>0),loss=trades.filter(t=>t.pnl<0),gw=wins.reduce((a,t)=>a+t.pnl,0),gl=-loss.reduce((a,t)=>a+t.pnl,0),peak=0,equity=0,maxGive=0;trades.forEach(t=>{equity+=t.pnl;peak=Math.max(peak,equity);maxGive=Math.max(maxGive,peak-equity)});
 $('net').textContent=money(net);$('net').className='metric '+(net>=0?'green':'red');$('win').textContent=trades.length?(wins.length/trades.length*100).toFixed(1)+'%':'—';$('pf').textContent=gl?(gw/gl).toFixed(2):gw?'∞':'—';$('give').textContent=money(maxGive);
 $('rows').innerHTML=trades.map((t,i)=>'<tr><td>'+t.time+'</td><td>'+t.symbol+' '+t.side+'</td><td>'+t.session+'</td><td>'+t.setup+'</td><td class="'+(t.pnl>=0?'green':'red')+'">'+money(t.pnl)+'</td><td><button class="danger" style="margin:0;padding:5px 8px" onclick="removeTrade('+i+')">×</button></td></tr>').join('');
-let streak=0;for(let i=trades.length-1;i>=0&&trades[i].pnl<0;i--)streak++;let reason='Plan active. Trade only valid order-flow setups.',status='READY';if(net<=-Math.abs(+rules.maxloss)){status='STOP';reason='Daily max loss reached.'}else if(maxGive>=+rules.giveback){status='STOP';reason='Giveback limit reached. Protect the session.'}else if(streak>=+rules.streak){status='PAUSE';reason='Maximum consecutive losses reached.'}else if(net>=+rules.target){status='LOCK PROFIT';reason='Profit target reached. Stop opening new positions.'}
+let streak=0;for(let i=trades.length-1;i>=0&&trades[i].pnl<0;i--)streak++;let reason=translations[language].ready,status='READY';if(net<=-Math.abs(+rules.maxloss)){status='STOP';reason=translations[language].maxloss}else if(maxGive>=+rules.giveback){status='STOP';reason=translations[language].giveback}else if(streak>=+rules.streak){status='PAUSE';reason=translations[language].streak}else if(net>=+rules.target){status='LOCK PROFIT';reason=translations[language].target}
 $('status').textContent=status;$('status').style.color=status==='READY'?'#35d49a':'#ff6474';$('reason').textContent=reason;$('progress').style.width=Math.max(0,Math.min(100,net/Math.max(1,+rules.target)*100))+'%'}
-function removeTrade(i){trades.splice(i,1);persist()}$('add').onclick=()=>{let p=Number($('pnl').value);if(!$('pnl').value||!Number.isFinite(p))return alert('请输入有效的净盈亏');trades.push({time:$('time').value||new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}),symbol:$('symbol').value,session:$('session').value,side:$('side').value,pnl:p,setup:$('setup').value});$('pnl').value='';persist()};
+function removeTrade(i){trades.splice(i,1);persist()}$('add').onclick=()=>{let p=Number($('pnl').value);if(!$('pnl').value||!Number.isFinite(p))return alert(translations[language].invalid);trades.push({time:$('time').value||new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}),symbol:$('symbol').value,session:$('session').value,side:$('side').value,pnl:p,setup:$('setup').value});$('pnl').value='';persist()};
 $('saveRules').onclick=()=>{rules={target:+$('target').value,maxloss:+$('maxloss').value,giveback:+$('giveback').value,streak:+$('streak').value};localStorage.setItem('msg_rules',JSON.stringify(rules));render()};
-$('clear').onclick=()=>{if(confirm('确定清空全部交易记录？')){trades=[];persist()}};$('csv').onclick=()=>{let csv='time,symbol,session,side,setup,pnl\n'+trades.map(t=>[t.time,t.symbol,t.session,t.side,t.setup,t.pnl].join(',')).join('\n');let a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download='marsoon-session-journal.csv';a.click();URL.revokeObjectURL(a.href)};
-if(localStorage.getItem('msg_rules'))Object.entries(rules).forEach(([k,v])=>$(k).value=v);render();
+$('clear').onclick=()=>{if(confirm(translations[language].confirm)){trades=[];persist()}};$('csv').onclick=()=>{let csv='time,symbol,session,side,setup,pnl\n'+trades.map(t=>[t.time,t.symbol,t.session,t.side,t.setup,t.pnl].join(',')).join('\n');let a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download='marsoon-session-journal.csv';a.click();URL.revokeObjectURL(a.href)};
+if(localStorage.getItem('msg_rules'))Object.entries(rules).forEach(([k,v])=>$(k).value=v);setLanguage(language);
 </script></body></html>
