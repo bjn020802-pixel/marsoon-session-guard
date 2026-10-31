@@ -57,7 +57,9 @@
 </main>
 <script>
 
-let language=localStorage.getItem('msg_language')||'en';
+const storage={get(k,d=null){try{return localStorage.getItem(k)??d}catch(e){return d}},set(k,v){try{localStorage.setItem(k,v)}catch(e){}}};
+function readJSON(k,fallback){try{return JSON.parse(storage.get(k,JSON.stringify(fallback)))}catch(e){return fallback}}
+let language=storage.get('msg_language','en');
 const translations={
 zh:{brandNote:'本地交易日志 · 手动录入',title:'交易时段指挥中心',subtitle:'追踪开盘时段优势，保护已实现利润，按计划停止交易。',
 metrics:['净盈亏','胜率','盈利因子','峰值回吐'],sections:['交易日志','风险护栏','执行纪律','成交明细 · Execution Blotter','市场逐笔 · DOM / Time & Sales','交易复盘 · Trade Review'],
@@ -79,7 +81,7 @@ ready:'Plan active. Trade only valid order-flow setups.',maxloss:'Daily max loss
 invalid:'Enter a valid net P&L.',confirm:'Clear all trade records?',remove:'Remove trade',lang:'中文'}
 };
 function setLanguage(lang){
- language=lang;localStorage.setItem('msg_language',lang);const t=translations[lang];document.documentElement.lang=lang==='zh'?'zh-CN':'en';
+ language=lang;storage.set('msg_language',lang);const t=translations[lang];document.documentElement.lang=lang==='zh'?'zh-CN':'en';
  $('localNote').textContent=t.brandNote;$('langToggle').textContent=t.lang;
  document.querySelector('h1').textContent=t.title;document.querySelector('h1').nextElementSibling.textContent=t.subtitle;
  document.querySelectorAll('.grid .card .muted').forEach((e,i)=>e.textContent=t.metrics[i]);
@@ -94,22 +96,22 @@ function setLanguage(lang){
  render();
 }
 const $=id=>document.getElementById(id);
-$('langToggle').onclick=()=>setLanguage(language==='en'?'zh':'en');let trades=JSON.parse(localStorage.getItem('msg_trades')||'[]');let rules=JSON.parse(localStorage.getItem('msg_rules')||'{"target":300,"maxloss":200,"giveback":100,"streak":3}');
-function persist(){localStorage.setItem('msg_trades',JSON.stringify(trades));render()}function money(n){return(n<0?'−':'')+'$'+Math.abs(n).toFixed(2)}
+$('langToggle').onclick=()=>setLanguage(language==='en'?'zh':'en');let trades=readJSON('msg_trades',[]);let rules=readJSON('msg_rules',{target:300,maxloss:200,giveback:100,streak:3});
+function persist(){storage.set('msg_trades',JSON.stringify(trades));render()}function money(n){return(n<0?'−':'')+'$'+Math.abs(n).toFixed(2)}
 function render(){let net=trades.reduce((a,t)=>a+t.pnl,0),wins=trades.filter(t=>t.pnl>0),loss=trades.filter(t=>t.pnl<0),gw=wins.reduce((a,t)=>a+t.pnl,0),gl=-loss.reduce((a,t)=>a+t.pnl,0),peak=0,equity=0,maxGive=0;trades.forEach(t=>{equity+=t.pnl;peak=Math.max(peak,equity);maxGive=Math.max(maxGive,peak-equity)});
 $('net').textContent=money(net);$('net').className='metric '+(net>=0?'green':'red');$('win').textContent=trades.length?(wins.length/trades.length*100).toFixed(1)+'%':'—';$('pf').textContent=gl?(gw/gl).toFixed(2):gw?'∞':'—';$('give').textContent=money(maxGive);
 $('rows').innerHTML=trades.map((t,i)=>'<tr><td>'+t.time+'</td><td>'+t.symbol+' '+t.side+'</td><td>'+t.session+'</td><td>'+t.setup+'</td><td class="'+(t.pnl>=0?'green':'red')+'">'+money(t.pnl)+'</td><td><button class="danger" style="margin:0;padding:5px 8px" onclick="removeTrade('+i+')">×</button></td></tr>').join('');
 let streak=0;for(let i=trades.length-1;i>=0&&trades[i].pnl<0;i--)streak++;let reason=translations[language].ready,status='READY';if(net<=-Math.abs(+rules.maxloss)){status='STOP';reason=translations[language].maxloss}else if(maxGive>=+rules.giveback){status='STOP';reason=translations[language].giveback}else if(streak>=+rules.streak){status='PAUSE';reason=translations[language].streak}else if(net>=+rules.target){status='LOCK PROFIT';reason=translations[language].target}
 $('status').textContent=status;$('status').style.color=status==='READY'?'#35d49a':'#ff6474';$('reason').textContent=reason;$('progress').style.width=Math.max(0,Math.min(100,net/Math.max(1,+rules.target)*100))+'%'}
 function removeTrade(i){trades.splice(i,1);persist()}$('add').onclick=()=>{let p=Number($('pnl').value);if(!$('pnl').value||!Number.isFinite(p))return alert(translations[language].invalid);trades.push({time:$('time').value||new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}),symbol:$('symbol').value,session:$('session').value,side:$('side').value,pnl:p,setup:$('setup').value});$('pnl').value='';persist()};
-$('saveRules').onclick=()=>{rules={target:+$('target').value,maxloss:+$('maxloss').value,giveback:+$('giveback').value,streak:+$('streak').value};localStorage.setItem('msg_rules',JSON.stringify(rules));render()};
+$('saveRules').onclick=()=>{rules={target:+$('target').value,maxloss:+$('maxloss').value,giveback:+$('giveback').value,streak:+$('streak').value};storage.set('msg_rules',JSON.stringify(rules));render()};
 $('clear').onclick=()=>{if(confirm(translations[language].confirm)){trades=[];persist()}};$('csv').onclick=()=>{let csv='time,symbol,session,side,setup,pnl\n'+trades.map(t=>[t.time,t.symbol,t.session,t.side,t.setup,t.pnl].join(',')).join('\n');let a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download='marsoon-session-journal.csv';a.click();URL.revokeObjectURL(a.href)};
-if(localStorage.getItem('msg_rules'))Object.entries(rules).forEach(([k,v])=>$(k).value=v);
-let fills=JSON.parse(localStorage.getItem('msg_fills')||'[]');
-let tape=JSON.parse(localStorage.getItem('msg_tape')||'[]');
-let reviews=JSON.parse(localStorage.getItem('msg_reviews')||'[]');
+if(storage.get('msg_rules'))Object.entries(rules).forEach(([k,v])=>{if($(k))$(k).value=v});
+let fills=readJSON('msg_fills',[]);
+let tape=readJSON('msg_tape',[]);
+let reviews=readJSON('msg_reviews',[]);
 const safe=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-function saveExtra(){localStorage.setItem('msg_fills',JSON.stringify(fills));localStorage.setItem('msg_tape',JSON.stringify(tape));localStorage.setItem('msg_reviews',JSON.stringify(reviews));renderExtra()}
+function saveExtra(){storage.set('msg_fills',JSON.stringify(fills));storage.set('msg_tape',JSON.stringify(tape));storage.set('msg_reviews',JSON.stringify(reviews));renderExtra()}
 function renderExtra(){
  $('fillRows').innerHTML=fills.map((x,i)=>'<tr><td>'+safe(x.time)+'</td><td>'+safe(x.trade)+'</td><td>'+safe(x.symbol)+'</td><td>'+safe(x.action)+'</td><td>'+safe(x.side)+'</td><td>'+x.price+'</td><td>'+x.qty+'</td><td>'+money(x.fees)+'</td><td><button class="danger" style="margin:0" onclick="delFill('+i+')">×</button></td></tr>').join('');
  $('tapeRows').innerHTML=tape.slice(-500).reverse().map((x,j)=>{let i=tape.length-1-j;return '<tr><td>'+safe(x.time)+'</td><td>'+safe(x.symbol)+'</td><td>'+x.price+'</td><td>'+x.size+'</td><td class="'+(x.aggressor==='BUY'?'green':x.aggressor==='SELL'?'red':'')+'">'+safe(x.aggressor)+'</td><td>'+safe(x.tradeId)+'</td><td><button class="danger" style="margin:0" onclick="delTape('+i+')">×</button></td></tr>'}).join('');
